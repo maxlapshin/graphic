@@ -40,14 +40,9 @@ make_graphic_config(Data) ->
     Prepared ->
       Options = [{Key, Value} || {option, Key, Value} <- Prepared],
       GraphData = [[{name,Name},{data,GData}|GOptions] || {graph, Name, GOptions, GData} <- Prepared],
-      {tag_proplists(Options), tag_proplists(GraphData)}
+      {Options, GraphData}
   end.
 
-tag_proplists([{_,_}|_] = PL) ->
-  {struct, [{Key, tag_proplists(Value)} || {Key, Value} <- PL]};
-tag_proplists([[{_,_}|_]|_] = List) ->
-  [tag_proplists(E) || E <- List];
-tag_proplists(Term) -> Term.
 
 % MFA graph: dummy for special wire action
 prepare_data({mfa, Module, Function, Args}) ->
@@ -96,8 +91,8 @@ wire_prepared_data(#graphic{client_id = ID}, {mfa, Module, Function, Args}) ->
   wf:wire(Script);
 
 wire_prepared_data(#graphic{client_id = ID}, {Options, GraphData}) ->
-  OptionsJSON = mochijson2:encode(Options),
-  DataJSON = mochijson2:encode(GraphData),
+  OptionsJSON = graphic_json:encode(Options),
+  DataJSON = graphic_json:encode(GraphData),
 
   Script = lists:flatten(io_lib:format("Graphic.render('~s', ~s, ~s);", [ID, OptionsJSON, DataJSON])),
   wf:wire(Script).

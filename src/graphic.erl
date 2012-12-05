@@ -42,27 +42,33 @@ websocket_init(_Transport, Req, _Opts) ->
 
 % Initial packet. Read MFA and parse result
 websocket_handle({text, Request}, Req, undefined) ->
-  {struct, Obj} = nitro_mochijson2:decode(Request),
-  {Module, Function, Args} = depickle(proplists:get_value(<<"mfa">>, Obj)),
+  Obj = graphic_json:decode(Request),
+  {Module, Function, Args} = depickle(proplists:get_value(mfa, Obj)),
   {ok, Config, HState, Options} = erlang:apply(Module, Function, Args),
-  State0 = #state{
-    mfa = {Module, Function, Args},
-    handler_state = HState,
-    info_handler = proplists:get_value(info_handler, Options),
-    ws_handler = proplists:get_value(ws_handler, Options)
-  },
   {GOptions, GData} = element_graphic:make_graphic_config(Config),
-  InitBody = nitro_mochijson2:encode({struct, [{init, true}, {options, GOptions}, {data, GData}]}),
+  InitBody = graphic_json:encode([{init, true}, {options, GOptions}, {data, GData}]),
+  
+  State0 = case Options of
+    stop ->
+      self() ! shutdown,
+      #state{mfa = {Module, Function, Args}};
+    _ ->
+      #state{
+        mfa = {Module, Function, Args},
+        handler_state = HState,
+        info_handler = proplists:get_value(info_handler, Options),
+        ws_handler = proplists:get_value(ws_handler, Options)
+      }
+  end,
   {reply, {text, InitBody}, Req, State0};
 
 websocket_handle({text, Packet}, Req, #state{ws_handler = Handler} = State) when Handler /= undefined ->
-  {struct, Event} = nitro_mochijson2:decode(Packet),
-  apply_handler(Handler, Event, Req, State).
+  apply_handler(Handler, graphic_json:decode(Packet), Req, State).
 
 
 % When handler is undefined proxy messages in {pass, Msg} format
 websocket_info({pass, Message}, Req, #state{info_handler = undefined} = State) ->
-  Body = nitro_mochijson2:encode({struct, Message}),
+  Body = graphic_json:encode(Message),
   {reply, {text, Body}, Req, State};
 
 % Magic 'shutdown' message
@@ -88,7 +94,7 @@ apply_handler({Module, Function, Args}, Message, Req, State) ->
     undefined ->
       {ok, Req, State};
     {ok, Reply} ->
-      Body = nitro_mochijson2:encode({struct, Reply}),
+      Body = graphic_json:encode(Reply),
       {reply, {text, Body}, Req, State}
   end;
 
@@ -97,10 +103,10 @@ apply_handler(Handler, Message, Req, #state{handler_state = HState} = State) whe
   Result = Handler(Message, HState),
   case Result of
     {reply, Reply} ->
-      Body = nitro_mochijson2:encode({struct, Reply}),
+      Body = graphic_json:encode(Reply),
       {reply, {text, Body}, Req, State};
     {reply, Reply, NewHState} ->
-      Body = nitro_mochijson2:encode({struct, Reply}),
+      Body = graphic_json:encode(Reply),
       {reply, {text, Body}, Req, State#state{handler_state = NewHState}};
     noreply ->
       {ok, Req, State};
@@ -110,7 +116,7 @@ apply_handler(Handler, Message, Req, #state{handler_state = HState} = State) whe
       {shutdown, Req, State};
     {stop, Reply} ->
       self() ! shutdown,
-      Body = nitro_mochijson2:encode({struct, Reply}),
+      Body = graphic_json:encode(Reply),
       {reply, {text, Body}, Req, State#state{info_handler = undefined}}
   end;
 

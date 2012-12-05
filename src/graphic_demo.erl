@@ -11,7 +11,7 @@
 -export([main/0, body/0]).
 
 % Demo graphic callbacks
--export([time_graphic/0]).
+-export([time_graphic/0, la_graphic/1, update_la/2]).
 
 
 start() ->
@@ -60,9 +60,13 @@ terminate(_Req, _State) ->
 % Nitrogen page
 main() -> #template{file = filename:join([code:lib_dir(graphic, priv), "demo.tmpl"])}.
 body() ->
-  #panel{style="width:400px;",
-    body = #graphic{data = {mfa, ?MODULE, time_graphic, []}}
-  }.
+  [
+    #panel{style="width:400px;",
+      body = #graphic{data = {mfa, ?MODULE, time_graphic, []}} },
+
+    #panel{style="width:400px;",
+      body = #graphic{data = {mfa, ?MODULE, la_graphic, [200]}} }
+  ].
 
 
 % Demo graphics
@@ -77,7 +81,37 @@ time_graphic() ->
     {hours,   [{T, (T div timer:hours(1)) rem 24} || T <- Times]},
     {minutes, [{T, (T div timer:minutes(1)) rem 60} || T <- Times]},
     {seconds, [{T, (T div timer:seconds(1)) rem 60} || T <- Times]} ],
-  {ok, Config, undefined, []}.
+  {ok, Config, undefined, stop}.
+
+la_graphic(Interval) ->
+  case lists:keymember(sasl, 3, application:which_applications()) of
+    true -> ok;
+    false ->
+      application:load(sasl),
+      application:set_env(sasl, errlog_type, error),
+      application:start(sasl)
+  end,
+  application:start(os_mon),
+
+  Config = [
+    {option, navigator, la1},
+    {option, legend, true},
+    {la1, []},
+    {la5, []},
+    {la15, []} ],
+  timer:send_interval(Interval, update_la),
+  {ok, Config, undefined, [{info_handler, update_la}]}.
+
+update_la(update_la, _State) ->
+  LA1 = cpu_sup:avg1(),
+  LA5 = cpu_sup:avg5(),
+  LA15 = cpu_sup:avg15(),
+  Now = now_ms(),
+  Update = [
+    {la1, [{Now, LA1}]},
+    {la5, [{Now, LA5}]},
+    {la15, [{Now, LA15}]} ],
+  {reply, Update}.
 
 
 now_ms() ->
