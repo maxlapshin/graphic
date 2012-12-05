@@ -96,6 +96,7 @@ la_graphic(Interval) ->
   Config = [
     {option, navigator, la1},
     {option, legend, true},
+    {option, title, <<"Load averages">>},
     {la1, []},
     {la5, []},
     {la15, []} ],
