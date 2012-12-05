@@ -22,7 +22,7 @@ start() ->
   application:start(mimetypes),
   application:start(cowboy),
 
-  JSStatic = {[<<"js">>, '...'], cowboy_http_static, [{directory, "./priv"}]},
+  JSStatic = {[<<"js">>, '...'], cowboy_http_static, [{directory, code:lib_dir(graphic, priv)}]},
   NitrogenStatic = {[<<"nitrogen">>, '...'], cowboy_http_static, [{directory, code:lib_dir(nitrogen_core, www)}]},
   GraphicDispatch = {[<<"graphic">>], graphic, []},
   NitrogenDispatch = {[<<"graphic_demo">>], ?MODULE, []},
@@ -58,7 +58,7 @@ terminate(_Req, _State) ->
 
 
 % Nitrogen page
-main() -> #template{file = "priv/demo.tmpl"}.
+main() -> #template{file = filename:join([code:lib_dir(graphic, priv), "demo.tmpl"])}.
 body() ->
   #panel{style="width:400px;",
     body = #graphic{data = {mfa, ?MODULE, time_graphic, []}}
