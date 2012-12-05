@@ -103,9 +103,9 @@ la_graphic(Interval) ->
   {ok, Config, undefined, [{info_handler, update_la}]}.
 
 update_la(update_la, _State) ->
-  LA1 = cpu_sup:avg1(),
-  LA5 = cpu_sup:avg5(),
-  LA15 = cpu_sup:avg15(),
+  LA1 = cpu_sup:avg1()/256,
+  LA5 = cpu_sup:avg5()/256,
+  LA15 = cpu_sup:avg15()/256,
   Now = now_ms(),
   Update = [
     {la1, [{Now, LA1}]},
