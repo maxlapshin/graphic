@@ -119,7 +119,27 @@
   };
 
   function updateGraphic(ID, Data) {
-    // TODO
+    var chart = window.graphics[ID];
+    for (var s in Data) {
+      var series = chart.get("series-" + s);
+      updateSeries(series, Data[s]);
+    };
+  };
+
+  function updateSeries(series, events) {
+    var times = Object.keys(events).sort();
+
+    for (var i = 0; i < times.length; i++) {
+      var utc = parseInt(times[i]);
+      if (isNaN(utc)) continue;
+
+      var value = events[utc];
+      var point;
+      if (Array.isArray(value)) point = value.unshift(utc)
+      else point = [utc, value];
+
+      series.addPoint(point, false);
+    };
   };
 
   function autoHeight(elt, ratio) {
