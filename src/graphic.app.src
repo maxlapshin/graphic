@@ -1,0 +1,6 @@
+{application, graphic, [
+    {description, "Nitrogen graphic element with optional WebSocket-updates using Cowboy"},
+    {vsn, 1},
+    {applications, [kernel, stdlib, nitrogen_core]},
+    {registered, []}
+  ]}.

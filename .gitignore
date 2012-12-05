@@ -1,0 +1,8 @@
+ebin
+deps
+.DS_Store
+apps/*/doc
+
+*.swp
+erl_crash.dump
+.eunit
