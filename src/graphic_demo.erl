@@ -11,13 +11,10 @@
 -export([main/0, body/0]).
 
 % Demo graphic callbacks
--export([time_graphic/0, la_graphic/1, update_la/2]).
+-export([async_static/0, random_data/1, time_graphic/0, time_detail/2, la_graphic/1, update_la/2]).
 
 
 start() ->
-  %% Start the Process Registry...
-  %application:start(nprocreg),
-
   %% Start Cowboy...
   application:start(mimetypes),
   application:start(cowboy),
@@ -60,28 +57,98 @@ terminate(_Req, _State) ->
 % Nitrogen page
 main() -> #template{file = filename:join([code:lib_dir(graphic, priv), "demo.tmpl"])}.
 body() ->
-  [
-    #panel{style="width:400px;",
-      body = #graphic{data = {mfa, ?MODULE, time_graphic, []}} },
+  #panel{style="width:100%; display:table;", body = [
+      #panel{style="display:table-row;", body = [
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = static, data = static_data()}},
 
-    #panel{style="width:400px;",
-      body = #graphic{data = {mfa, ?MODULE, la_graphic, [200]}} }
-  ].
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = static_async, data = {mfa, ?MODULE, async_static, []}}},
+
+          #panel{}
+        ]},
+      #panel{style="display:table-row;", body = [
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = random, data = {mfa, ?MODULE, random_data, [1000]}} },
+
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = loadavg, data = {mfa, ?MODULE, la_graphic, [200]}} },
+
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = modulated, data = {mfa, ?MODULE, time_graphic, []}} },
+
+          #panel{}
+        ]}
+    ]}.
 
 
 % Demo graphics
+static_data() ->
+  [{option, title, <<"Static">>},
+    {graph1, [
+        {1354723700000, 17},
+        {1354723710000, 19},
+        {1354723720000, 20},
+        {1354723730000, 22},
+        {1354723740000, 18},
+        {1354723750000, 17} ]},
+    {graph2, [{type, scatter}], [
+        {1354723703000, 20},
+        {1354723713000, 22},
+        {1354723723000, 19},
+        {1354723733000, 19},
+        {1354723743000, 21},
+        {1354723753000, 20} ]}
+  ].
+
+async_static() ->
+  {ok, static_data(), undefined, stop}.
+
+
+random_data(Interval) ->
+  Config = [
+    {option, title, <<"Random">>},
+    {option, navigator, true},
+    {random, []} ],
+  timer:send_interval(Interval, random),
+  {ok, Config, undefined, [{info_handler, fun random_sender/1}]}.
+
+random_sender(random) ->
+  Point = {now_ms(), random:uniform()},
+  {reply, [{random, [Point]}]}.
+
+
 time_graphic() ->
+  Range = erlang:round(timer:hours(1.1)),
+  Count = 300,
+
   Now = now_ms(),
-  Start = Now - timer:hours(1),
-  Times = lists:seq(Start, Now, timer:seconds(1)),
+  Start = Now - Range,
+  Step = Range div Count,
+  
+  Times = lists:seq(Start, Now, Step),
 
   Config = [
-    {option, navigator, minutes},
-    {option, legend, true},
-    {hours,   [{T, (T div timer:hours(1)) rem 24} || T <- Times]},
-    {minutes, [{T, (T div timer:minutes(1)) rem 60} || T <- Times]},
-    {seconds, [{T, (T div timer:seconds(1)) rem 60} || T <- Times]} ],
-  {ok, Config, undefined, stop}.
+    {option, navigator, nice_fun},
+    {option, title, <<"Zoomable">>},
+    {nice_fun, [{T, time_fun(T)} || T <- Times]} ],
+  {ok, Config, undefined, [{range_handler, {?MODULE, time_detail, [Count]}}]}.
+
+time_detail(Request, Count) ->
+  From = proplists:get_value(min, Request),
+  To = proplists:get_value(max, Request),
+  Step = erlang:max(1, (To - From) div Count),
+
+  Points = [{T, time_fun(T)} || T <- lists:seq(From, To, Step)],
+  {reply, [{nice_fun, Points}]}.
+
+
+time_fun(UTC) ->
+  Minutes = (UTC rem timer:hours(1)) / timer:minutes(1),
+  Seconds = (UTC rem timer:minutes(1)) / timer:seconds(1),
+  % Some high-freq function modulated by low-freq one
+  10*(1 + math:sin(Minutes/5)) * math:sin(Seconds).
+
 
 la_graphic(Interval) ->
   case lists:keymember(sasl, 3, application:which_applications()) of
