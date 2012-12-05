@@ -8,6 +8,7 @@
 -export([render_element/1, reflect/0]).
 
 -export([make_graphic_config/1]).
+-export([prepare_points/1]).
 
 % For internal Nitrogen use
 reflect() -> record_info(fields, graphic).
@@ -60,15 +61,8 @@ prepare_data([{options, Options}|MoreData]) ->
 prepare_data([{Name, Points}|MoreData]) ->
   prepare_data([{Name, [], Points}|MoreData]);
 
-% Empty graph (for later updates)
-prepare_data([{Name, Options, []}|MoreData]) ->
-  [{graph, Name, Options, []}|prepare_data(MoreData)];
-% Scalar numeric data
-prepare_data([{Name, Options, [Y|_] = Points}|MoreData]) when is_number(Y) ->
-  [{graph, Name, Options, prepare_y(Points)}|prepare_data(MoreData)];
-% (x,y) or (utc,y) data
-prepare_data([{Name, Options, [{X,Y}|_] = Points}|MoreData]) when is_number(X) andalso is_number(Y) ->
-  [{graph, Name, Options, prepare_xy(Points)}|prepare_data(MoreData)];
+prepare_data([{Name, Options, Points}|MoreData]) ->
+  [{graph, Name, Options, prepare_points(Points)}|prepare_data(MoreData)];
 
 % End of data
 prepare_data([]) -> [].
@@ -83,6 +77,24 @@ prepare_xy(Points) ->
   lists:map(fun({X,Y}) when is_number(X) andalso is_number(Y) ->
         [X,Y]
     end, Points).
+
+prepare_ohlc(Points) ->
+  lists:map(fun({X, [O, H, L, C]}) when is_number(X), is_number(O+H+L+C) ->
+        [X, O, H, L, C]
+    end, Points).
+
+prepare_points([]) ->
+  % No data
+  [];
+prepare_points([Y|_] = Points) when is_number(Y) ->
+  % Scalar numeric data
+  prepare_y(Points);
+prepare_points([{X,Y}|_] = Points) when is_number(X) andalso is_number(Y) ->
+  % (x,y) or (utc,y) data
+  prepare_xy(Points);
+prepare_points([{X,[_,_,_,_]}|_] = Points) when is_number(X) ->
+  % OHLC data
+  prepare_ohlc(Points).
 
 
 wire_prepared_data(#graphic{client_id = ID}, {mfa, Module, Function, Args}) ->

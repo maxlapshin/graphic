@@ -14,7 +14,7 @@
     mfa,
     handler_state,
     info_handler,
-    ws_handler
+    range_handler
   }).
 
 
@@ -45,25 +45,37 @@ websocket_handle({text, Request}, Req, undefined) ->
   Obj = graphic_json:decode(Request),
   {Module, Function, Args} = depickle(proplists:get_value(mfa, Obj)),
   {ok, Config, HState, Options} = erlang:apply(Module, Function, Args),
-  {GOptions, GData} = element_graphic:make_graphic_config(Config),
-  InitBody = graphic_json:encode([{init, true}, {options, GOptions}, {data, GData}]),
+
+  {BaseGOptions, GData} = element_graphic:make_graphic_config(Config),
+
+  RangeHandler = case is_list(Options) of
+    false -> undefined;
+    true -> proplists:get_value(range_handler, Options)
+  end,
+
+  GOptions = case RangeHandler of
+    undefined -> BaseGOptions;
+    _ -> lists:keystore(range, 1, BaseGOptions, {range, dynamic})
+  end,
   
   State0 = case Options of
     stop ->
       self() ! shutdown,
       #state{mfa = {Module, Function, Args}};
-    _ ->
+    _ when is_list(Options) ->
       #state{
         mfa = {Module, Function, Args},
         handler_state = HState,
         info_handler = proplists:get_value(info_handler, Options),
-        ws_handler = proplists:get_value(ws_handler, Options)
+        range_handler = RangeHandler
       }
   end,
+
+  InitBody = graphic_json:encode([{init, true}, {options, GOptions}, {data, GData}]),
   {reply, {text, InitBody}, Req, State0};
 
-websocket_handle({text, Packet}, Req, #state{ws_handler = Handler} = State) when Handler /= undefined ->
-  apply_handler(Handler, graphic_json:decode(Packet), Req, State).
+websocket_handle({text, Packet}, Req, #state{range_handler = Handler} = State) when Handler /= undefined ->
+  apply_handler(range, Handler, graphic_json:decode(Packet), Req, State).
 
 
 % When handler is undefined proxy messages in {pass, Msg} format
@@ -81,33 +93,40 @@ websocket_info(_, Req, #state{info_handler = undefined} = State) ->
 
 % Apply specified handler
 websocket_info(Message, Req, #state{info_handler = Handler} = State) ->
-  apply_handler(Handler, Message, Req, State).
+  apply_handler(info, Handler, Message, Req, State).
 
 % Dummy terminate
 websocket_terminate(_Reason, _Req, _State) ->
   ok.
 
 % Stateless handler - Just apply
-apply_handler({Module, Function, Args}, Message, Req, State) ->
+apply_handler(Type, {Module, Function, Args}, Message, Req, State) ->
   Result = erlang:apply(Module, Function, [Message|Args]),
-  case Result of
-    undefined ->
-      {ok, Req, State};
-    {ok, Reply} ->
-      Body = graphic_json:encode(Reply),
-      {reply, {text, Body}, Req, State}
-  end;
+  handle_apply_result(Type, Result, Req, State);
+
+apply_handler(Type, Fun, Message, Req, State) when is_function(Fun, 1) ->
+  Result = Fun(Message),
+  handle_apply_result(Type, Result, Req, State);
 
 % handle_info style callback
-apply_handler(Handler, Message, Req, #state{handler_state = HState} = State) when is_function(Handler, 2) ->
+apply_handler(Type, Handler, Message, Req, #state{handler_state = HState} = State) when is_function(Handler, 2) ->
   Result = Handler(Message, HState),
+  handle_apply_result(Type, Result, Req, State);
+
+apply_handler(Type, {Module, Function}, Message, Req, #state{} = State) ->
+  apply_handler(Type, fun Module:Function/2, Message, Req, State);
+
+apply_handler(Type, Function, Message, Req, #state{mfa = {Module, _, _}} = State) when is_atom(Function) ->
+  apply_handler(Type, fun Module:Function/2, Message, Req, State).
+
+
+
+handle_apply_result(Type, Result, Req, #state{} = State) ->
   case Result of
     {reply, Reply} ->
-      Body = graphic_json:encode(Reply),
-      {reply, {text, Body}, Req, State};
+      send_reply(Type, Reply, Req, State);
     {reply, Reply, NewHState} ->
-      Body = graphic_json:encode(Reply),
-      {reply, {text, Body}, Req, State#state{handler_state = NewHState}};
+      send_reply(Type, Reply, Req, State#state{handler_state = NewHState});
     noreply ->
       {ok, Req, State};
     {noreply, NewHState} ->
@@ -116,14 +135,18 @@ apply_handler(Handler, Message, Req, #state{handler_state = HState} = State) whe
       {shutdown, Req, State};
     {stop, Reply} ->
       self() ! shutdown,
-      Body = graphic_json:encode(Reply),
-      {reply, {text, Body}, Req, State#state{info_handler = undefined}}
-  end;
+      send_reply(Type, Reply, Req, State#state{info_handler = undefined})
+  end.
 
-apply_handler({Module, Function}, Message, Req, #state{} = State) ->
-  apply_handler(fun Module:Function/2, Message, Req, State);
+send_reply(Type, Reply, Req, State) ->
+  Prepared = [{Name, element_graphic:prepare_points(Points)} || {Name, Points} <- Reply],
+  send_prepared_reply(Type, Prepared, Req, State).
 
-apply_handler(Function, Message, Req, #state{mfa = {Module, _, _}} = State) when is_atom(Function) ->
-  apply_handler(fun Module:Function/2, Message, Req, State).
+send_prepared_reply(info, Reply, Req, State) ->
+  encode_and_send(Reply, Req, State);
+send_prepared_reply(range, Reply, Req, State) ->
+  encode_and_send([{set, true}|Reply], Req, State).
 
-
+encode_and_send(Reply, Req, State) ->
+  Body = graphic_json:encode(Reply),
+  {reply, {text, Body}, Req, State}.

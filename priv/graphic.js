@@ -42,8 +42,6 @@
     var xAxis = {ordinal: Options.ordinal};
     // categories for bar charts
     if(Options.categories) xAxis.categories = Options.categories;
-    // range seen by default
-    if(Options.range) xAxis.range = Options.range;
 
     // Y axis is passed as-is
     var yAxis = Options.yAxis;
@@ -60,6 +58,14 @@
       navigator.baseSeries = Options.navigator;
     } else
       navigator.enabled = Options.navigator || (maxDataLen(Data) > 500);
+
+    // X Range options -- set dynamic or static range if requested
+    if (Options.range == "dynamic") { // Magic range for lazy loading
+      xAxis.events = {afterSetExtremes : afterSetExtremes}; // Install hook
+      navigator.adaptToUpdatedData = false; // Avoid continious updates
+    } else if (!isNaN(Options.range)) { // Numeric range
+      xAxis.range = Options.range;
+    }
 
     var legend = {enabled:false};
     if (Options.legend) {
@@ -97,24 +103,28 @@
     var uri = "ws://" + window.location.host + "/graphic";
     var s = new WebSocket(uri);
 
+    // Send MFA jyst after open
+    s.onopen = function(evt) {
+      s.send(JSON.stringify({mfa: MFA}));
+    };
+
     // Accept message
     s.onmessage = function(evt) {
       var data = JSON.parse(evt.data);
       if (data.init) {
         // Initial render
         var graph = renderGraphic(ID, data.options, data.data);
+        // Store websocket for event handlers
+        graph.websocket = s;
         // Anything user wants to attach to graphic
         graph.custom_data = data.custom;
         // To improve viewing speed we trigger redraw externally, not on every data packet
         startRedraw(graph, 250);
+      } else if (data.set) {
+        setGraphicData(ID, data);
       } else {
         updateGraphic(ID, data);
       };
-    };
-
-    // Send MFA jyst after open
-    s.onopen = function(evt) {
-      s.send(JSON.stringify({mfa: MFA}));
     };
   };
 
@@ -126,20 +136,22 @@
     };
   };
 
-  function updateSeries(series, events) {
-    var times = Object.keys(events).sort();
+  function updateSeries(series, points) {
+    var count = points.length;
 
-    for (var i = 0; i < times.length; i++) {
-      var utc = parseInt(times[i]);
-      if (isNaN(utc)) continue;
-
-      var value = events[utc];
-      var point;
-      if (Array.isArray(value)) point = value.unshift(utc)
-      else point = [utc, value];
-
-      series.addPoint(point, false);
+    for (var i = 0; i < count; i++) {
+      series.addPoint(points[i], false);
     };
+  };
+
+  function setGraphicData(ID, Data) {
+    var chart = window.graphics[ID];
+    for (var s in Data) {
+      if (Data[s] == true) continue; // Flag
+      var series = chart.get("series-" + s);
+      series.setData(Data[s], false);
+    };
+    chart.redraw();
   };
 
   function autoHeight(elt, ratio) {
@@ -157,6 +169,19 @@
       graph.redraw();
       startRedraw(graph, interval);
     }, interval);
+  };
+
+  function afterSetExtremes(e) {
+    // Extract corresponding socket
+    var chart = e.target.chart; if (!chart) return false;
+    var s = chart.websocket; if (!s) return false;
+
+    // Extract bounds
+    var min = Math.round(e.min);
+    var max = Math.round(e.max);
+
+    // Send query
+    s.send(JSON.stringify({type:"range", min:min, max:max}));
   };
 
   window.Graphic = {
