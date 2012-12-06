@@ -63,6 +63,21 @@ Data is simply list of tuples `{Time, Value}` for most types of graphs.
       ].
 
 
+Accepted Options
+------------
+Options may be specified as `{option, Name, Value}` or `{options, [{Name, Value}, {Name, Value}, ...]}`. Each option should be specified once because we don't know what do multiple values for one option mean.
+Currently these options are supported:
+ * `type` -- default graph type. Graph without own type option will be of this type. See Highcharts docs.
+ * `ordinal` -- set to false if you want time (X axis) to be linear
+ * `categories` -- list of categories for bar charts
+ * `yAxis` -- Passed as-is to chart config (see Highcharts docs)
+ * `title` -- Title of chart. Use binary value, because list is encoded to JSON as array.
+ * `navigator` -- false | true | series-name -- tells whether to use navigator and which series will it follow. Auto-enabled when initial data has more than 500 points.
+ * `legend` -- false | true | Align -- displays legend (maybe with custom align option)
+ * `range_selector` -- Passed as rangeSelector chart option
+ * `scrollbar` -- Enables scrollbar
+
+
 Asynchronous data loading
 ----------------
 If your data needs long computations to get, it's better to load it asynchronouly. Graphic uses WebSockets for this.
