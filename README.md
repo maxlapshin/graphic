@@ -76,7 +76,33 @@ Currently these options are supported:
  * `legend` -- false | true | Align -- displays legend (maybe with custom align option)
  * `range_selector` -- Passed as rangeSelector chart option
  * `scrollbar` -- Enables scrollbar
+ * `lines` -- list of horizontal lines to draw. List of tuples `{Label, Options}` where Options is either value or list `[Value, Option, Option...]` (Value is first). Options may be color, width, style and label position. See example.
 
+
+Horizontal Lines
+---------
+Example:
+
+    body() ->
+      #panel{style="width:400px;",
+        body = #graphic{data = static_lines()}}.
+
+    static_lines() ->
+      [{option, title, <<"Line demo">>},
+        {option, lines, [
+            {line1, 14},
+            {line2, [19, red, right]},
+            {line3, [25, left, long_dash_dot_dot, green, 3]} ]},
+        {some_graph, [
+            {1354723700000, 13},
+            {1354723710000, 29},
+            {1354723720000, 20} ]}
+      ].
+
+Line style is one of `solid short_dash short_dot short_dash_dot short_dash_dot_dot dot dash long_dash dash_dot long_dash_dot long_dash_dot_dot`. `dot` is default.
+Alignment is either left, right or center(default). 
+Color may be any valid HTML color, default is black.
+Any number after first position in option list treated as line width (in pixels). Default is 1.
 
 Asynchronous data loading
 ----------------
