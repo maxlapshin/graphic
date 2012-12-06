@@ -45,6 +45,9 @@
 
     // Y axis is passed as-is
     var yAxis = Options.yAxis;
+    if (! yAxis) yAxis = {};
+
+    if (Options.lines) yAxis.plotLines = genPlotLines(Options.lines);
 
     // Make floating title if needed
     var title = undefined;
@@ -182,6 +185,76 @@
 
     // Send query
     s.send(JSON.stringify({type:"range", min:min, max:max}));
+  };
+
+  function genPlotLines(lines) {
+    var plotLines = [];
+    for (var name in lines) {
+      var current = {color:"black", width:1, dashStyle:"dot"};
+      var line = lines[name];
+
+      current.label = {text:name, align:"center"};
+
+      if (typeof(line) == "number") line = [line]
+      current.value = line.shift();
+
+      while (line.length > 0) {
+        var option = line.shift();
+        parsePlotLineOption(option, current);
+      };
+      plotLines.push(current);
+    };
+
+    return plotLines;
+  };
+
+  function parsePlotLineOption(option, plotLine) {
+    if (!isNaN(option)) {
+      // Numeric option -- assume it is line width
+      plotLine.width = option;
+      return plotLine;
+    };
+    var x = 0;
+    switch (option) {
+      // label position
+      case "left":
+        x = 60;
+      case "right":
+        x -= 30;
+      case "center":
+        plotLine.label.align = option;
+        plotLine.label.x = x;
+        break;
+
+      // dash style
+      case "solid":
+        plotLine.dashStyle = "Solid"; break;
+      case "short_dash":
+        plotLine.dashStyle = "ShortDash"; break;
+      case "short_dot":
+        plotLine.dashStyle = "ShortDot"; break;
+      case "short_dash_dot":
+        plotLine.dashStyle = "ShortDashDot"; break;
+      case "short_dash_dot_dot":
+        plotLine.dashStyle = "ShortDashDotDot"; break;
+      case "dot":
+        plotLine.dashStyle = "Dot"; break;
+      case "dash":
+        plotLine.dashStyle = "Dash"; break;
+      case "long_dash":
+        plotLine.dashStyle = "LongDash"; break;
+      case "dash_dot":
+        plotLine.dashStyle = "DashDot"; break;
+      case "long_dash_dot":
+        plotLine.dashStyle = "LongDashDot"; break;
+      case "long_dash_dot_dot":
+        plotLine.dashStyle = "LongDashDotDot"; break;
+        
+      default:
+        // Not width, not align, not style. Assume it is color.
+        plotLine.color = option;
+    };
+    return plotLine;
   };
 
   window.Graphic = {
