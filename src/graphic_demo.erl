@@ -65,6 +65,9 @@ body() ->
           #panel{style="width:400px; display:table-cell;",
             body = #graphic{client_id = static_async, data = {mfa, ?MODULE, async_static, []}}},
 
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = line_demo, data = static_lines()}},
+
           #panel{}
         ]},
       #panel{style="display:table-row;", body = [
@@ -104,6 +107,17 @@ static_data() ->
 async_static() ->
   {ok, static_data(), undefined, stop}.
 
+static_lines() ->
+  [{option, title, <<"Line demo">>},
+    {option, lines, [
+        {line1, 14},
+        {line2, [19, red, right]},
+        {line3, [25, left, long_dash_dot_dot, green, 3]} ]},
+    {some_graph, [
+        {1354723700000, 13},
+        {1354723710000, 29},
+        {1354723720000, 20} ]}
+  ].
 
 random_data(Interval) ->
   Config = [
