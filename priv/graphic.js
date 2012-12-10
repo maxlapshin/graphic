@@ -28,7 +28,9 @@
     if (! Options) Options = {};
 
     // select between Chart and StockChart
-    var chartType = Options.chartType || "StockChart";
+    var backend;
+    if (Options.backend == "chart") backend = "Chart"
+    else backend = "StockChart";
 
     // Display options
     var chartOptions = {renderTo: ID, animation: false};
@@ -95,7 +97,7 @@
       plotOptions: {ohlc: {grouping: false, lineWidth: 2}}
     };
 
-    chart = new Highcharts[chartType](args);
+    chart = new Highcharts[backend](args);
 
     window.graphics[ID] = chart;
     return chart;
