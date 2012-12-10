@@ -81,6 +81,12 @@ body() ->
             body = #graphic{client_id = modulated, data = {mfa, ?MODULE, time_graphic, []}} },
 
           #panel{}
+        ]},
+      #panel{style="display:table-row;", body = [
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = chart_backend, data = chart_backend()}},
+
+          #panel{}
         ]}
     ]}.
 
@@ -201,3 +207,13 @@ now_ms() ->
 now_to_ms({MegaSec, Sec, Microsec}) ->
   Microsec div 1000 + (Sec + 1000000*MegaSec) * 1000.
 
+
+
+chart_backend() ->
+  [{option, title, <<"Chart backend">>},
+    {option, backend, chart},
+    {graph1, [
+        {0.7, 22},
+        {1.0, 18},
+        {1.1, 17} ]}
+  ].

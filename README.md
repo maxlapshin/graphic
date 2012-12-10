@@ -63,6 +63,25 @@ Data is simply list of tuples `{Time, Value}` for most types of graphs.
       ].
 
 
+Chart backend: when X axis is not time
+---------------------
+When you need X axis to be something other than time you need to use `chart` backend. For any other value of `backend` option `StockChart` (X is UTC milliseconds) is used.
+Example:
+
+    body() ->
+      #panel{style="width:400px;",
+        body = #graphic{data = chart_backend()}}.
+
+    chart_backend() ->
+      [{option, title, <<"Chart backend">>},
+        {option, backend, chart},
+        {graph1, [
+            {0.7, 22},
+            {1.0, 18},
+            {1.1, 17} ]}
+      ].
+
+
 Accepted Options
 ------------
 Options may be specified as `{option, Name, Value}` or `{options, [{Name, Value}, {Name, Value}, ...]}`. Each option should be specified once because we don't know what do multiple values for one option mean.
