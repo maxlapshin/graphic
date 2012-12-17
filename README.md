@@ -213,3 +213,18 @@ When user sets new range on graphic, callback is called and graphic data is repl
     
       Points = [{T, time_fun(T)} || T <- lists:seq(From, To, Step)],
       {reply, [{nice_fun, Points}]}.
+
+
+Marks
+-------------------------------
+
+You can add marks to graphic by adding `#graphic_mark{}` to config or live update.
+`#graphic_mark{}` has required field `id` (passed to JSON, so should be atom, integer or binary), coordinates `x` and `y`, optional `title`.
+When updating mark it is enough to specify `id` and fields you want to change. `title = null` hides title.
+
+    marks_demo() ->
+      Marks = [#graphic_mark{id = mark19, x = 5, y = 1.3, title = <<"Hello">>}],
+      Config = [{option, title, <<"Marks demo">>},
+        {option, backend, chart} | Marks ],
+      timer:send_interval(2000, update_marks),
+      {ok, Config, 0, [{info_handler, marks_demo}]}.
