@@ -12,6 +12,7 @@
 
 % Demo graphic callbacks
 -export([async_static/0, random_data/1, time_graphic/0, time_detail/2, la_graphic/1, update_la/2]).
+-export([marks_demo/0, marks_demo/2]).
 
 
 start() ->
@@ -85,6 +86,9 @@ body() ->
       #panel{style="display:table-row;", body = [
           #panel{style="width:400px; display:table-cell;",
             body = #graphic{client_id = chart_backend, data = chart_backend()}},
+
+          #panel{style="width:400px; display:table-cell;",
+            body = #graphic{client_id = marks_demo, data = {mfa, ?MODULE, marks_demo, []}} },
 
           #panel{}
         ]}
@@ -217,3 +221,17 @@ chart_backend() ->
         {1.0, 18},
         {1.1, 17} ]}
   ].
+
+marks_demo() ->
+  Marks = [], % marks are added dynamically
+  Config = [{option, title, <<"Marks demo">>},
+    {option, backend, chart} | Marks ],
+  timer:send_interval(2000, update_marks),
+  {ok, Config, 0, [{info_handler, marks_demo}]}.
+
+marks_demo(update_marks, Pos) ->
+  Marks = marks(Pos+1),
+  {reply, Marks, Pos+1}.
+
+marks(Pos) ->
+  [#graphic_mark{id = N, x = N, y = math:sin((Pos + N)/2), title = N} || N <- lists:seq(0, 5)].
