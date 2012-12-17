@@ -1,5 +1,8 @@
 (function() {
   function tooltipFormatter() {
+    // For charts (X is not time) prit pair of (x, y)
+    if (this.point) return "(" + this.x + ", " + this.y + ")";
+
     // Always print smal timestamp
     var t = '<span style="font-size:xx-small">' + Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) + '</span><br/>';
     $.each(this.points, function(i, item) {
@@ -37,8 +40,31 @@
     // Default graph type -- line, ohlc, etc.
     if(Options.type) chartOptions.type = Options.type;
 
+    var dataLabels = {
+      enabled:true,
+      formatter:function() {return this.point.title;},
+      y:-12,
+      borderRadius:3,
+      borderColor:"black",
+      borderWidth:1,
+      backgroundColor:"#bebebe"
+    };
+
+    // auto-add marks series
+    var haveMarks = false;
+    $.each(Data, function(i, s) {if (s.name == "$marks") haveMarks = true; });
+    if (!haveMarks) Data.push({name: "$marks", data: []});
+
     // Set series ids for use with Chart.get(id)
-    $.each(Data, function(i, s) {s.id = "series-" + s.name;});
+    $.each(Data, function(i, s) {
+      s.id = "series-" + s.name;
+      if (s.name == "$marks") {
+        s.type = "scatter";
+        s.color = "#40b040";
+        s.dataLabels = dataLabels;
+        setMarkLabels(s.data);
+      };
+    });
 
     // ordinal = false makes point interval be proportional to actual time difference
     var xAxis = {ordinal: Options.ordinal};
@@ -94,7 +120,7 @@
       credits: {enabled: false},
       tooltip: {formatter: tooltipFormatter},
       series: Data,
-      plotOptions: {ohlc: {grouping: false, lineWidth: 2}}
+      plotOptions: {ohlc: {grouping: false, lineWidth: 2} }
     };
 
     chart = new Highcharts[backend](args);
@@ -137,7 +163,10 @@
     var chart = window.graphics[ID];
     for (var s in Data) {
       var series = chart.get("series-" + s);
-      updateSeries(series, Data[s]);
+      if (s == "$marks") {
+        updateMarks(series, Data[s])
+      }
+      else updateSeries(series, Data[s]);
     };
   };
 
@@ -147,6 +176,34 @@
     for (var i = 0; i < count; i++) {
       series.addPoint(points[i], false);
     };
+  };
+
+  function setMarkLabels(marks) {
+    return $.map(marks, function(m) {
+      if (m.title == undefined) {}
+      else if (m.title == null) m.dataLabels = {enabled:false};
+      else m.dataLabels = {enabled:true};
+      return m.mark_id;
+    });
+  };
+
+  function updateMarks(series, marks) {
+    var markIds = setMarkLabels(marks);
+    var sData = series.data;
+    var dataLen = sData.length;
+    // scan old events, when ids compare equal, update
+    for (var i = dataLen - 1; i >= 0 && markIds.length > 0; i --) {
+      var cur = sData[i];
+      var j = markIds.indexOf(cur.mark_id);
+      // Positive j means sData[i] should be updated with marks[j]
+      if (j >= 0) {
+        markIds.splice(j, 1);
+        var mark = marks.splice(j, 1)[0];
+        cur.update(mark);
+      };
+    };
+    // Now marks contain only new points
+    $.map(marks, function(m) {series.addPoint(m)});
   };
 
   function setGraphicData(ID, Data) {

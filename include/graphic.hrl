@@ -12,3 +12,8 @@
     client_id
   }).
 
+-record(graphic_mark, {
+    id = undefined,
+    x, y,
+    title
+  }).

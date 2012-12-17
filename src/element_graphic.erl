@@ -8,7 +8,7 @@
 -export([render_element/1, reflect/0]).
 
 -export([make_graphic_config/1]).
--export([prepare_points/1]).
+-export([prepare_points/1, prepare_marks/1]).
 
 % For internal Nitrogen use
 reflect() -> record_info(fields, graphic).
@@ -53,6 +53,16 @@ prepare_data({mfa, Module, Function, Args}) ->
 prepare_data([{option, Key, Value}|MoreData]) ->
   [{option, Key, Value}|prepare_data(MoreData)];
 
+% Magic marks graph
+prepare_data([#graphic_mark{}|_] = Data) ->
+  {Marks, NotMarks} = lists:partition(fun(X) -> is_record(X, graphic_mark) end, Data),
+
+  GraphEntry = case prepare_marks(Marks) of
+    [] -> [];
+    Defined -> [{graph, '$marks', [], Defined}]
+  end,
+  prepare_data(NotMarks) ++ GraphEntry;
+
 prepare_data([{options, Options}|MoreData]) ->
   PreparedOptions = [{option, Key, Value} || {Key, Value} <- Options],
   PreparedOptions ++ prepare_data(MoreData);
@@ -82,6 +92,20 @@ prepare_ohlc(Points) ->
   lists:map(fun({X, [O, H, L, C]}) when is_number(X), is_number(O+H+L+C) ->
         [X, O, H, L, C]
     end, Points).
+
+prepare_marks(Marks) ->
+  Prepared = [prepare_mark(Mark) || Mark <- Marks],
+  [Mark || Mark <- Prepared, Mark /= undefined].
+
+prepare_mark(#graphic_mark{id = undefined}) ->
+  undefined;
+prepare_mark(#graphic_mark{id = ID, x = X, y = Y, title = Title}) ->
+  FullDesc = [{mark_id, ID}, {x, X}, {y, Y}, {title, Title}],
+  Desc = [KV || {_, V} = KV <- FullDesc, V /= undefined],
+  case length(Desc) of
+    1 -> undefined; % Only id specified, too few data
+    _ -> Desc
+  end.
 
 prepare_points([]) ->
   % No data

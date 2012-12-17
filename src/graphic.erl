@@ -139,7 +139,13 @@ handle_apply_result(Type, Result, Req, #state{} = State) ->
   end.
 
 send_reply(Type, Reply, Req, State) ->
-  Prepared = [{Name, element_graphic:prepare_points(Points)} || {Name, Points} <- Reply],
+  PreparedMarks = case element_graphic:prepare_marks([M || #graphic_mark{} = M <- Reply]) of
+    [] -> [];
+    Marks -> [{'$marks', Marks}]
+  end,
+  PreparedPoints = [{Name, element_graphic:prepare_points(Points)} || {Name, Points} <- Reply],
+
+  Prepared = PreparedMarks ++ PreparedPoints,
   send_prepared_reply(Type, Prepared, Req, State).
 
 send_prepared_reply(info, Reply, Req, State) ->
