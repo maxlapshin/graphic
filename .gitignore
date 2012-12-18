@@ -1,4 +1,3 @@
-ebin
 deps
 .DS_Store
 apps/*/doc
