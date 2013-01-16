@@ -157,6 +157,11 @@
         updateGraphic(ID, data);
       };
     };
+
+    s.onclose = function() {
+      var chart = window.graphics[ID];
+      delete chart.websocket;
+    };
   };
 
   function updateGraphic(ID, Data) {
@@ -229,7 +234,7 @@
   function startRedraw(graph, interval) {
     setTimeout(function() {
       graph.redraw();
-      startRedraw(graph, interval);
+      if (graph.websocket) startRedraw(graph, interval);
     }, interval);
   };
 
