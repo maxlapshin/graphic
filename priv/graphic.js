@@ -160,7 +160,11 @@
 
     s.onclose = function() {
       var chart = window.graphics[ID];
-      chart && chart.websocket && delete chart.websocket;
+      if (chart) {
+        chart.websocket && delete chart.websocket;
+      } else {
+        obj('#' + ID).innerText = "Error";
+      }
     };
   };
 
