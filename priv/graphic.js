@@ -160,7 +160,7 @@
 
     s.onclose = function() {
       var chart = window.graphics[ID];
-      delete chart.websocket;
+      chart && chart.websocket && delete chart.websocket;
     };
   };
 
