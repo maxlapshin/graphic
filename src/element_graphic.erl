@@ -24,7 +24,7 @@ render_element(#graphic{client_id = ID, ratio = Ratio} = E) ->
   wf:wire(io_lib:format("Graphic.autoHeight(~s, ~w);", [JSElt, Ratio])),
   wire_data(E),
 
-  wf_tags:emit_tag('div', [], [
+  wf_tags:emit_tag('div', ["Loading..."], [
       {id, ID},
       {class, [simple_graph, E#graphic.class]},
       {style, E#graphic.style}
