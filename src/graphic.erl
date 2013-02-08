@@ -8,6 +8,7 @@
 -export([websocket_handle/3, websocket_info/3, websocket_terminate/3]).
 
 -export([pickle/1, depickle/1]).
+-export([destroy/1]).
 
 
 -record(state, {
@@ -156,3 +157,9 @@ send_prepared_reply(range, Reply, Req, State) ->
 encode_and_send(Reply, Req, State) ->
   Body = graphic_json:encode(Reply),
   {reply, {text, Body}, Req, State}.
+
+
+destroy(Id) ->
+  Script1 = wf:f("var g_id = '~s'; window.graphics && window.graphics[g_id] && window.graphics[g_id].destroy()", [Id]),
+  Script2 = wf:f("var g_id = '~s'; window.graphics && delete window.graphics[g_id]", [Id]),
+  wf:wire(Script1), wf:wire(Script2).
