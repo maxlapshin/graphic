@@ -80,6 +80,8 @@
     // Make floating title if needed
     var title = undefined;
     if (Options.title) title = {text: Options.title, floating: true};
+    var subtitle = undefined;
+    if (Options.subtitle) subtitle = {text: Options.subtitle, floating: true};
 
     // Navigator logic
     var navigator = {height:20}; // Narrow to save space
@@ -116,6 +118,7 @@
       xAxis: xAxis,
       yAxis: yAxis,
       title: title,
+      subtitle: subtitle,
       legend: legend,
       credits: {enabled: false},
       tooltip: {formatter: tooltipFormatter},
