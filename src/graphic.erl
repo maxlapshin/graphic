@@ -45,8 +45,43 @@ websocket_init(_Transport, Req, _Opts) ->
 websocket_handle({text, Request}, Req, undefined) ->
   Obj = graphic_json:decode(Request),
   {Module, Function, Args} = depickle(proplists:get_value(mfa, Obj)),
-  {ok, Config, HState, Options} = erlang:apply(Module, Function, Args),
+  case erlang:apply(Module, Function, Args) of
+    {ok, Config, HState, Options} ->
+      handle_successful_init(Req, {Module, Function, Args}, Config, HState, Options);
+    _ ->
+      {shutdown, Req, undefined}
+  end;
 
+
+
+websocket_handle({text, Packet}, Req, #state{range_handler = Handler} = State) when Handler /= undefined ->
+  apply_handler(range, Handler, graphic_json:decode(Packet), Req, State).
+
+
+% When handler is undefined proxy messages in {pass, Msg} format
+websocket_info({pass, Message}, Req, #state{info_handler = undefined} = State) ->
+  Body = graphic_json:encode(Message),
+  {reply, {text, Body}, Req, State};
+
+% Magic 'shutdown' message
+websocket_info(shutdown, Req, #state{info_handler = undefined} = State) ->
+  {shutdown, Req, State};
+
+% Ignore other messages when handler is undefined
+websocket_info(_, Req, #state{info_handler = undefined} = State) ->
+  {ok, Req, State};
+
+% Apply specified handler
+websocket_info(Message, Req, #state{info_handler = Handler} = State) ->
+  apply_handler(info, Handler, Message, Req, State).
+
+% Dummy terminate
+websocket_terminate(_Reason, _Req, _State) ->
+  ok.
+
+
+% Continue initialization after callback returned
+handle_successful_init(Req, {Module, Function, Args}, Config, HState, Options) ->
   {BaseGOptions, GData} = element_graphic:make_graphic_config(Config),
 
   RangeHandler = case is_list(Options) of
@@ -73,32 +108,8 @@ websocket_handle({text, Request}, Req, undefined) ->
   end,
 
   InitBody = graphic_json:encode([{init, true}, {options, GOptions}, {data, GData}]),
-  {reply, {text, InitBody}, Req, State0};
+  {reply, {text, InitBody}, Req, State0}.
 
-websocket_handle({text, Packet}, Req, #state{range_handler = Handler} = State) when Handler /= undefined ->
-  apply_handler(range, Handler, graphic_json:decode(Packet), Req, State).
-
-
-% When handler is undefined proxy messages in {pass, Msg} format
-websocket_info({pass, Message}, Req, #state{info_handler = undefined} = State) ->
-  Body = graphic_json:encode(Message),
-  {reply, {text, Body}, Req, State};
-
-% Magic 'shutdown' message
-websocket_info(shutdown, Req, #state{info_handler = undefined} = State) ->
-  {shutdown, Req, State};
-
-% Ignore other messages when handler is undefined
-websocket_info(_, Req, #state{info_handler = undefined} = State) ->
-  {ok, Req, State};
-
-% Apply specified handler
-websocket_info(Message, Req, #state{info_handler = Handler} = State) ->
-  apply_handler(info, Handler, Message, Req, State).
-
-% Dummy terminate
-websocket_terminate(_Reason, _Req, _State) ->
-  ok.
 
 % Stateless handler - Just apply
 apply_handler(Type, {Module, Function, Args}, Message, Req, State) ->
