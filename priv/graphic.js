@@ -128,6 +128,9 @@
 
     chart = new Highcharts[backend](args);
 
+    // Anything user wants to attach to graphic
+    chart.custom_data = Options.custom_data;
+
     window.graphics[ID] = chart;
     return chart;
   };
@@ -150,8 +153,6 @@
         var graph = renderGraphic(ID, data.options, data.data);
         // Store websocket for event handlers
         graph.websocket = s;
-        // Anything user wants to attach to graphic
-        graph.custom_data = data.custom;
         // To improve viewing speed we trigger redraw externally, not on every data packet
         startRedraw(graph, 250);
       } else if (data.set) {
@@ -328,9 +329,25 @@
     return plotLine;
   };
 
+  function setVisibility(Field, Value, Visible) {
+    var hidden;
+    var allgraphics = window.graphics;
+
+    if (typeof(Visible) == "boolean") hidden = !Visible
+    else hidden = !Visible.checked;
+
+    for (var id in allgraphics) {
+      if (allgraphics[id].custom_data && allgraphics[id].custom_data[Field] == Value)
+        obj("#" + id).hidden = hidden;
+    };
+  };
+
+
   window.Graphic = {
     autoHeight: autoHeight,
     render: renderGraphic,
-    ws_request: requestWsGraphic };
+    ws_request: requestWsGraphic,
+    setVisibility: setVisibility
+  };
   window.graphics = {};
 })();
