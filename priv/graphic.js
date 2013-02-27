@@ -85,7 +85,10 @@
 
     // Navigator logic
     var navigator = {height:20}; // Narrow to save space
-    if (typeof(Options.navigator) == "string" || typeof(Options.navigator) == "number") {
+    if (typeof(Options.navigator) == "string") {
+      navigator.enabled = true;
+      navigator.baseSeries = "series-" + Options.navigator;
+    } else if (typeof(Options.navigator) == "number") {
       // We have explicit series for navigator
       navigator.enabled = true;
       navigator.baseSeries = Options.navigator;
