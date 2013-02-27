@@ -50,6 +50,9 @@ prepare_data({mfa, Module, Function, Args}) ->
   {mfa, Module, Function, Args};
 
 % Option: It will go to special object
+prepare_data([{option, Key, Value}|MoreData]) when (Key == title orelse Key == subtitle), is_list(Value) ->
+  [{option, Key, erlang:iolist_to_binary(Value)}|prepare_data(MoreData)];
+
 prepare_data([{option, Key, Value}|MoreData]) ->
   [{option, Key, Value}|prepare_data(MoreData)];
 
@@ -65,7 +68,7 @@ prepare_data([#graphic_mark{}|_] = Data) ->
 
 prepare_data([{options, Options}|MoreData]) ->
   PreparedOptions = [{option, Key, Value} || {Key, Value} <- Options],
-  PreparedOptions ++ prepare_data(MoreData);
+  prepare_data(PreparedOptions ++ MoreData);
 
 % Insert empty options list if no options given
 prepare_data([{Name, Points}|MoreData]) ->
