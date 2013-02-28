@@ -26,7 +26,7 @@ render_element(#graphic{client_id = ID, ratio = Ratio} = E) ->
 
   wf_tags:emit_tag('div', ["Loading..."], [
       {id, ID},
-      {class, [simple_graph, E#graphic.class]},
+      {class, [graphic_container, E#graphic.class]},
       {style, E#graphic.style}
     ]).
 
