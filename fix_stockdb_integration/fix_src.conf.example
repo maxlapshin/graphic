@@ -1,0 +1,7 @@
+% Fill your fix endpoint data here
+{host,"fix-source.example.com"}.
+{port,8102}.
+{target,"REMOTE_FIX_ID"}.
+{sender,"LOCAL_FIX_ID"}.
+{password,"SOME_PASSWORD"}.
+{heartbeat,30}.

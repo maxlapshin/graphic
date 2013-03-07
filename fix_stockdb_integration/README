@@ -1,0 +1,21 @@
+Fix + StockDB + Graphic integration demo app
+
+Main module bringing them all together is graphic_quotes_demo. Look how it works if you are interested.
+
+
+To build, execute
+   ./rebar get-deps compile
+
+To configure, copy fix_src.conf.example to fix_src.conf and edit it to specify your fix connection info.
+
+To run demo:
+   ERL_LIBS=deps erl -s graphic_demo start
+
+
+Demo page with stock data (saved earlier and current updates) will be available at
+   http://localhost:8880/graphic_demo?stock=NASDAQ.AAPL
+(Of course, you may specify any other stock accessible with your FIX account)
+
+
+Known problems:
+   On first run graphs do not display. We beleive it is HighStocks trouble. Just reload page after graph navigator changes.
