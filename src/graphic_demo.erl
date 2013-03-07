@@ -32,6 +32,9 @@ start() ->
     cowboy_tcp_transport, [{port, 8880}],
     cowboy_http_protocol, HttpOpts),
 
+  io:format("Visit http://localhost:8880/graphic_demo to see simple graphic usage examples.~n"
+    "Visit http://localhost:8880/graphic_demo?stock=LSEIOB.URKA (or choose other stock) to see fix-stockdb-graphic integration"),
+
   ok.
 
 % Cowboy -> Nitrogen adapter
@@ -58,6 +61,12 @@ terminate(_Req, _State) ->
 % Nitrogen page
 main() -> #template{file = filename:join([code:lib_dir(graphic, priv), "demo.tmpl"])}.
 body() ->
+  case wf:q(stock) of
+    undefined -> default_body();
+    Stock -> graphic_quotes_demo:body(wf:to_atom(Stock))
+  end.
+
+default_body() ->
   #panel{style="width:100%; display:table;", body = [
       #panel{style="display:table-row;", body = [
           #panel{style="width:400px; display:table-cell;",
