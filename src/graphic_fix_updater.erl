@@ -5,7 +5,7 @@
 
 attach(Stock) ->
   Graphic = self(),
-  gen_event:add_sup_handler(Stock, {graphic, Graphic}, Graphic).
+  gen_event:add_sup_handler(Stock, {?MODULE, Graphic}, Graphic).
 
 init(Graphic) ->
   {ok, Graphic}.
