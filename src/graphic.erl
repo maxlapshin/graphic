@@ -1,5 +1,5 @@
 -module(graphic).
--author({"Danil Zagoskin", z@gosk.in}).
+-author({"Danil Zagoskin", 'z@gosk.in'}).
 
 -include_lib("cowboy/include/http.hrl").
 -include("../include/graphic.hrl").

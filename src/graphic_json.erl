@@ -1,5 +1,5 @@
 -module(graphic_json).
--author({"Danil Zagoskin", z@gosk.in}).
+-author({"Danil Zagoskin", 'z@gosk.in'}).
 
 -export([encode/1, decode/1]).
 

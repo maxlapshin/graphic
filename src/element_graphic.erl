@@ -1,5 +1,5 @@
 -module(element_graphic).
--author({"Danil Zagoskin", z@gosk.in}).
+-author({"Danil Zagoskin", 'z@gosk.in'}).
 
 -include_lib("nitrogen_core/include/wf.hrl").
 -include("../include/graphic.hrl").
