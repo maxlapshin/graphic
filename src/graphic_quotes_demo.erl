@@ -91,6 +91,7 @@ unpack(rev, Bid, Ask, Trade) ->
 
 % Simplify collected data to not overload browser
 hlc([]) -> [];
+hlc([Single]) -> [Single];
 hlc([Hd|Events]) ->
   hlc(Events, Hd, Hd).
 
