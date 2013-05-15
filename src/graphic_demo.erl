@@ -142,9 +142,14 @@ random_data(Interval) ->
   Config = [
     {option, title, <<"Random">>},
     {option, navigator, true},
-    {random, []} ],
+    {option, range, 100*Interval},
+    {random, random_history(Interval)} ],
   timer:send_interval(Interval, random),
   {ok, Config, undefined, [{info_handler, fun random_sender/1}]}.
+
+random_history(Interval) ->
+  Now = now_ms(),
+  [{Timestamp, random:uniform()} || Timestamp <- lists:seq(Now - 5000*Interval, Now, 10*Interval)].
 
 random_sender(random) ->
   Point = {now_ms(), random:uniform()},

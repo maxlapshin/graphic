@@ -157,6 +157,8 @@ For first three options function is called with two arguments -- `(Message, Stat
 
 Returned `Obj` is in minimal data format -- `[{Name, [{Time, Value}]}]`
 
+Here is some example of live updating graph. It is seeded with some fake history data and then updated in realtime with random values.
+
     body() ->
       #panel{style="width:400px;",
         body = #graphic{data = {mfa, ?MODULE, random_data, [1000]}}}.
@@ -165,9 +167,14 @@ Returned `Obj` is in minimal data format -- `[{Name, [{Time, Value}]}]`
       Config = [
         {option, title, <<"Random">>},
         {option, navigator, true},
-        {random, []} ],
+        {option, range, 100*Interval},
+        {random, random_history(Interval)} ],
       timer:send_interval(Interval, random),
       {ok, Config, undefined, [{info_handler, fun random_sender/1}]}.
+    
+    random_history(Interval) ->
+      Now = now_ms(),
+      [{Timestamp, random:uniform()} || Timestamp <- lists:seq(Now - 5000*Interval, Now, 10*Interval)].
     
     random_sender(random) ->
       Point = {now_ms(), random:uniform()},
