@@ -42,7 +42,7 @@ Data is simply list of tuples `{Time, Value}` for most types of graphs.
 
     body() ->
       #panel{style="width:400px;",
-        body = #graphic{data = static_data()}}.
+        body = #graphic{data = static_data(), ratio = 2.0}}.
 
     static_data() ->
       [{option, title, <<"Static">>},
