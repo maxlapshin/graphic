@@ -1,7 +1,6 @@
 -module(graphic).
 -author({"Danil Zagoskin", 'z@gosk.in'}).
 
--include_lib("cowboy/include/http.hrl").
 -include("../include/graphic.hrl").
 
 -export([init/3, websocket_init/3]).
