@@ -53,7 +53,7 @@
     // auto-add marks series
     var haveMarks = false;
     $.each(Data, function(i, s) {if (s.name == "$marks") haveMarks = true; });
-    if (!haveMarks) Data.push({name: "$marks", data: []});
+    // if (!haveMarks) Data.push({name: "$marks", data: []});
 
     // Set series ids for use with Chart.get(id)
     $.each(Data, function(i, s) {
