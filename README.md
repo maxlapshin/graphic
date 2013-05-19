@@ -21,7 +21,7 @@ First, you need a working Cowboy+Nitrogen bundle. Then include `highstocks.js` a
 For live updates and background data acquiring you need additional dispatch in Cowboy config.
 Typical dispatch option for Cowboy looks like
 
-    {[<<"graphic">>], graphic, []}
+    {"/graphic", graphic, []}
 
 ... which tells Cowboy to use `graphic` module to handle `/graphic` requests.
 
