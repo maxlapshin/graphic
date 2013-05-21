@@ -1,5 +1,6 @@
 -module(graphic).
 -author({"Danil Zagoskin", 'z@gosk.in'}).
+-behaviour(cowboy_websocket_handler).
 
 -include("../include/graphic.hrl").
 
@@ -34,7 +35,7 @@ depickle(Encoded) ->
 % cowboy callbacks
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 init({tcp, http}, _Req, _Opts) ->
-  {upgrade, protocol, cowboy_http_websocket}.
+  {upgrade, protocol, cowboy_websocket}.
 
 websocket_init(_Transport, Req, _Opts) ->
   {ok, Req, undefined}.
