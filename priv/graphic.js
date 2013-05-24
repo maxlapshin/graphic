@@ -151,6 +151,10 @@
     // Accept message
     s.onmessage = function(evt) {
       var data = JSON.parse(evt.data);
+      if(!document.getElementById(ID)) {
+        s.close();
+        return;
+      }
       if (data.init) {
         // Initial render
         var graph = renderGraphic(ID, data.options, data.data);
