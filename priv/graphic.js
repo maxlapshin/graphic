@@ -161,7 +161,7 @@
       } else if (data.set) {
         setGraphicData(ID, data);
       } else {
-        updateGraphic(ID, data);
+        updateGraphic(ID, data, data.shift);
       };
     };
 
@@ -175,22 +175,22 @@
     };
   };
 
-  function updateGraphic(ID, Data) {
+  function updateGraphic(ID, Data, shift) {
     var chart = window.graphics[ID];
     for (var s in Data) {
       var series = chart.get("series-" + s);
       if (s == "$marks") {
-        updateMarks(series, Data[s])
+        updateMarks(series, Data[s], shift)
       }
-      else updateSeries(series, Data[s]);
+      else if(series) updateSeries(series, Data[s], shift);
     };
   };
 
-  function updateSeries(series, points) {
+  function updateSeries(series, points, shift) {
     var count = points.length;
 
     for (var i = 0; i < count; i++) {
-      series.addPoint(points[i], false);
+      series.addPoint(points[i], false, shift);
     };
   };
 
@@ -227,7 +227,7 @@
     for (var s in Data) {
       if (Data[s] == true) continue; // Flag
       var series = chart.get("series-" + s);
-      series.setData(Data[s], false);
+      if(series && series.setData) series.setData(Data[s], false);
     };
     chart.redraw();
   };

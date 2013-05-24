@@ -157,7 +157,9 @@ send_reply(Type, Reply, Req, State) ->
   end,
   PreparedPoints = [{Name, element_graphic:prepare_points(Points)} || {Name, Points} <- Reply],
 
-  Prepared = PreparedMarks ++ PreparedPoints,
+  Options = [{Key,Value} || {option,Key,Value} <- Reply],
+
+  Prepared = PreparedMarks ++ PreparedPoints ++ Options,
   send_prepared_reply(Type, Prepared, Req, State).
 
 send_prepared_reply(info, Reply, Req, State) ->

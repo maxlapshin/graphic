@@ -170,15 +170,26 @@ Here is some example of live updating graph. It is seeded with some fake history
         {option, range, 100*Interval},
         {random, random_history(Interval)} ],
       timer:send_interval(Interval, random),
-      {ok, Config, undefined, [{info_handler, fun random_sender/1}]}.
+      {ok, Config, random_data_state, [{info_handler, fun random_sender/1}]}.
     
     random_history(Interval) ->
       Now = now_ms(),
       [{Timestamp, random:uniform()} || Timestamp <- lists:seq(Now - 5000*Interval, Now, 10*Interval)].
     
-    random_sender(random) ->
+    random_sender(_State) ->
       Point = {now_ms(), random:uniform()},
       {reply, [{random, [Point]}]}.
+
+
+It is possible to specify some options in reply:
+
+
+    random_sender(_State) ->
+      Point = {now_ms(), random:uniform()},
+      {reply, [{option,shift,true},{random, [Point]}]}.
+
+Supported options:
+ * `shift` -- remove first point from graphic when adding new point
 
 
 Dynamic detalization graph
