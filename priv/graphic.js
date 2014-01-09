@@ -138,9 +138,9 @@
     return chart;
   };
 
-  function requestWsGraphic(ID, MFA) {
+  function requestWsGraphic(ID, MFA, ws_subpath) {
     // Generate WS uri based on current host
-    var uri = "ws://" + window.location.host + "/graphic";
+    var uri = "ws://" + window.location.host + (ws_subpath || "/graphic");
     var s = new WebSocket(uri);
 
     // Send MFA jyst after open
